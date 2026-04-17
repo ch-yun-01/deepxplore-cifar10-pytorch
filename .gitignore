@@ -1,0 +1,15 @@
+# python
+__pycache__/
+*.pyc
+*.pyo
+
+# pytorch
+*.pt
+*.pth
+
+# datasets
+data/
+*.tar.gz
+
+# checkpoints
+checkpoints/
