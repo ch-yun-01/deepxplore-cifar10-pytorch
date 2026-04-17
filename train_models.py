@@ -26,46 +26,52 @@ def evaluate(model, loader, device):
     with torch.no_grad():
         for x, y in loader:
             x, y = x.to(device), y.to(device)
-            logits = model(x)
-            pred = logits.argmax(dim=1)
+            pred = model(x).argmax(dim=1)
             correct += (pred == y).sum().item()
             total += y.size(0)
 
-    return correct / total if total > 0 else 0.0
+    return correct / total
 
 
 def build_transforms(variant):
+    normalize = transforms.Normalize(
+        (0.4914, 0.4822, 0.4465),
+        (0.2023, 0.1994, 0.2010)
+    )
+
     if variant == 1:
-        train_transform = transforms.Compose([
+        train_tf = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(0.2, 0.2, 0.2),
             transforms.ToTensor(),
+            normalize,
         ])
     elif variant == 2:
-        train_transform = transforms.Compose([
+        train_tf = transforms.Compose([
             transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+            transforms.ColorJitter(0.3, 0.3, 0.3),
+            transforms.RandomRotation(10),
             transforms.ToTensor(),
+            normalize,
         ])
     else:
-        train_transform = transforms.Compose([
+        train_tf = transforms.Compose([
             transforms.RandomCrop(32, padding=2),
+            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
+            normalize,
         ])
 
-    test_transform = transforms.Compose([
+    test_tf = transforms.Compose([
         transforms.ToTensor(),
+        normalize,
     ])
 
-    return train_transform, test_transform
+    return train_tf, test_tf
 
 
 def set_trainable_layers(model, mode):
-    """
-    mode 1: full fine-tuning
-    mode 2: fc only
-    mode 3: layer4 + fc only
-    """
     if mode == 1:
         for p in model.parameters():
             p.requires_grad = True
@@ -79,116 +85,93 @@ def set_trainable_layers(model, mode):
     elif mode == 3:
         for p in model.parameters():
             p.requires_grad = False
+
+        for p in model.model.layer3.parameters():
+            p.requires_grad = True
         for p in model.model.layer4.parameters():
             p.requires_grad = True
         for p in model.model.fc.parameters():
             p.requires_grad = True
 
-    else:
-        raise ValueError(f"Unknown mode: {mode}")
 
-
-def train_one_model(seed, lr, variant, mode, save_path, epochs=10, batch_size=128):
+def train_one_model(seed, lr, variant, mode, pretrained, save_path, epochs=30):
     set_seed(seed)
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_transform, test_transform = build_transforms(variant)
+    train_tf, test_tf = build_transforms(variant)
 
-    trainset = torchvision.datasets.CIFAR10(
-        root="./data", train=True, download=True, transform=train_transform
-    )
-    testset = torchvision.datasets.CIFAR10(
-        root="./data", train=False, download=True, transform=test_transform
-    )
+    trainset = torchvision.datasets.CIFAR10("./data", True, download=True, transform=train_tf)
+    testset = torchvision.datasets.CIFAR10("./data", False, download=True, transform=test_tf)
 
-    trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=batch_size, shuffle=True, num_workers=2
-    )
-    testloader = torch.utils.data.DataLoader(
-        testset, batch_size=batch_size, shuffle=False, num_workers=2
-    )
+    trainloader = torch.utils.data.DataLoader(trainset, 128, shuffle=True)
+    testloader = torch.utils.data.DataLoader(testset, 128)
 
-    model = CIFARResNet50().to(device)
+    model = CIFARResNet50(pretrained=pretrained).to(device)
     set_trainable_layers(model, mode)
 
-    criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=lr,
         momentum=0.9,
         weight_decay=5e-4
     )
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[5, 8], gamma=0.1)
 
-    best_acc = 0.0
+    # scheduler
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer,
+        milestones=[10, 20],
+        gamma=0.1
+    )
+
+    criterion = nn.CrossEntropyLoss()
+
+    best_acc = 0
+    patience = 5
+    counter = 0
+
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"[{os.path.basename(save_path)}] trainable params: {trainable_params}/{total_params}")
 
     for epoch in range(epochs):
         model.train()
-        running_loss = 0.0
 
         for x, y in trainloader:
             x, y = x.to(device), y.to(device)
 
             optimizer.zero_grad()
-            logits = model(x)
-            loss = criterion(logits, y)
+            loss = criterion(model(x), y)
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-
         scheduler.step()
-        test_acc = evaluate(model, testloader, device)
+
+        acc = evaluate(model, testloader, device)
 
         print(
-            f"[{os.path.basename(save_path)}] "
-            f"epoch={epoch+1}/{epochs} "
-            f"loss={running_loss/len(trainloader):.4f} "
-            f"test_acc={test_acc:.4f}"
+            f"{save_path} epoch {epoch+1} "
+            f"acc {acc:.4f} "
+            f"lr {optimizer.param_groups[0]['lr']:.5f}"
         )
 
-        if test_acc > best_acc:
-            best_acc = test_acc
+        if acc > best_acc:
+            best_acc = acc
+            counter = 0
             torch.save(model.state_dict(), save_path)
+        else:
+            counter += 1
 
-    print(f"Saved best model to {save_path}, best_acc={best_acc:.4f}")
+        if counter >= patience:
+            print(f"Early stopping at epoch {epoch+1}")
+            break
 
 
 if __name__ == "__main__":
     os.makedirs("checkpoints", exist_ok=True)
 
-    # model1: full fine-tune
-    train_one_model(
-        seed=0,
-        lr=0.01,
-        variant=1,
-        mode=1,
-        save_path="checkpoints/model1.pth",
-        epochs=25
-    )
+    # # model1: scratch
+    train_one_model(0, 0.01, 1, 1, False, "checkpoints/model1.pth")
 
-    # model2: fc only
-    train_one_model(
-        seed=42,
-        lr=0.03,
-        variant=2,
-        mode=2,
-        save_path="checkpoints/model2.pth",
-        epochs=25
-    )
+    # # model2: pretrained full fine-tune
+    train_one_model(42, 0.005, 2, 1, True, "checkpoints/model2.pth")
 
-    # model3: layer4 + fc
-    train_one_model(
-        seed=123,
-        lr=0.01,
-        variant=3,
-        mode=3,
-        save_path="checkpoints/model3.pth",
-        epochs=25
-    )
+    # model3: pretrained partial fine-tune
+    train_one_model(123, 0.005, 3, 3, True, "checkpoints/model3.pth")

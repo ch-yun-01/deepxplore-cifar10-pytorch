@@ -4,13 +4,15 @@ import torchvision.models as models
 
 
 class CIFARResNet50(nn.Module):
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, pretrained=False):
         super().__init__()
 
-        # pretrained 사용
-        self.model = models.resnet50(
-            weights=models.ResNet50_Weights.DEFAULT
-        )
+        if pretrained:
+            self.model = models.resnet50(
+                weights=models.ResNet50_Weights.DEFAULT
+            )
+        else:
+            self.model = models.resnet50(weights=None)
 
         # CIFAR 맞게 수정
         self.model.conv1 = nn.Conv2d(
@@ -57,7 +59,8 @@ class CIFARResNet50(nn.Module):
 
 
 def load_model(ckpt_path, device, num_classes=10):
-    model = CIFARResNet50(num_classes=num_classes)
+
+    model = CIFARResNet50(num_classes=num_classes, pretrained=False)
 
     state = torch.load(ckpt_path, map_location=device)
     model.load_state_dict(state)
