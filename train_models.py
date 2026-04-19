@@ -94,7 +94,7 @@ def set_trainable_layers(model, mode):
             p.requires_grad = True
 
 
-def train_one_model(seed, lr, variant, mode, pretrained, save_path, epochs=30):
+def train_one_model(seed, lr, variant, mode, pretrained, save_path, epochs=50):
     set_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -142,7 +142,7 @@ def train_one_model(seed, lr, variant, mode, pretrained, save_path, epochs=30):
             loss.backward()
             optimizer.step()
 
-        scheduler.step()
+        # scheduler.step()
 
         acc = evaluate(model, testloader, device)
 
@@ -168,10 +168,10 @@ if __name__ == "__main__":
     os.makedirs("checkpoints", exist_ok=True)
 
     # # model1: scratch
-    train_one_model(0, 0.01, 1, 1, False, "checkpoints/model1.pth")
+    train_one_model(42, 0.005, 1, 1, False, "checkpoints/model1.pth")
 
     # # model2: pretrained full fine-tune
     train_one_model(42, 0.005, 2, 1, True, "checkpoints/model2.pth")
 
-    # model3: pretrained partial fine-tune
-    train_one_model(123, 0.005, 3, 3, True, "checkpoints/model3.pth")
+    # pretrained partial fine-tune
+    train_one_model(42, 0.005, 3, 3, True, "checkpoints/model4.pth")
