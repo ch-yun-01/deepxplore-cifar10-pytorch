@@ -1,5 +1,6 @@
 # gen_diff_cifar10.py
 import os
+import json
 import argparse
 import random
 
@@ -25,22 +26,15 @@ from utils_torch import (
     make_objective,
 )
 
-# CIFAR-10 정규화 통계값 (학습 시 사용한 값과 동일해야 함)
 CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR10_STD  = (0.2023, 0.1994, 0.2010)
 
 
 def clamp_to_valid_range(img: torch.Tensor) -> torch.Tensor:
-    """
-    정규화된 입력값을 원본 [0,1] 픽셀 공간 기준으로 clamp한다.
-    정규화 공식: x_norm = (x - mean) / std
-    역산하면: x = x_norm * std + mean
-    따라서 유효 범위: [(0 - mean) / std, (1 - mean) / std]
-    """
     mean = torch.tensor(CIFAR10_MEAN, device=img.device).view(1, 3, 1, 1)
     std  = torch.tensor(CIFAR10_STD,  device=img.device).view(1, 3, 1, 1)
-    lo = (0.0 - mean) / std   # 정규화 공간에서의 최솟값
-    hi = (1.0 - mean) / std   # 정규화 공간에서의 최댓값
+    lo = (0.0 - mean) / std
+    hi = (1.0 - mean) / std
     return torch.clamp(img, lo, hi)
 
 
@@ -66,7 +60,7 @@ def main():
     parser.add_argument("--model1_path", default="./checkpoints/model1.pth")
     parser.add_argument("--model2_path", default="./checkpoints/model2.pth")
     parser.add_argument("--model3_path", default="./checkpoints/model3.pth")
-    parser.add_argument("--output_dir",  default="./generated_inputs")
+    parser.add_argument("--output_dir",  default="./results")
 
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
 
@@ -75,8 +69,6 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     device = torch.device(args.device)
 
-    # FIX 5: 변수명을 cifar10_transform으로 명확히 구분
-    # (원본 코드의 normalize 변수명이 gradient normalize 함수와 혼동될 수 있었음)
     cifar10_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(CIFAR10_MEAN, CIFAR10_STD),
@@ -89,12 +81,10 @@ def main():
         transform=cifar10_transform,
     )
 
-    # 모델 로드
     model1 = load_model(args.model1_path, device)
     model2 = load_model(args.model2_path, device)
     model3 = load_model(args.model3_path, device)
 
-    # coverage 초기화 — dummy forward로 feature 구조 파악
     dummy_img, _ = testset[0]
     dummy_img = dummy_img.unsqueeze(0).to(device)
 
@@ -118,13 +108,9 @@ def main():
     for seed_idx in range(args.seeds):
         img, _ = random.choice(testset)
 
-        # FIX 4: gradient 추적이 필요한 gen_img를 루프 진입 전에 한 번만 준비
-        # 매 iteration 내부에서 requires_grad_(True)를 반복하면
-        # 새 텐서 할당 후 grad 추적이 끊길 수 있음
         gen_img  = img.unsqueeze(0).to(device)
         orig_img = gen_img.clone().detach()
 
-        # 시드가 이미 불일치를 유발하는지 확인
         with torch.no_grad():
             logits1, feat1 = model1.forward_with_features(gen_img)
             logits2, feat2 = model2.forward_with_features(gen_img)
@@ -140,7 +126,6 @@ def main():
                 f"[seed {seed_idx}] already differs: {label1},{label2},{label3}" +
                 bcolors.ENDC
             )
-            # coverage update
             update_coverage_from_features(feat1, "model1", model_layer_dict1, args.threshold)
             update_coverage_from_features(feat2, "model2", model_layer_dict2, args.threshold)
             update_coverage_from_features(feat3, "model3", model_layer_dict3, args.threshold)
@@ -156,11 +141,8 @@ def main():
 
         for iters in range(args.grad_iterations):
 
-            # FIX 4: 매 step마다 새 텐서에서 grad를 추적
             gen_img = gen_img.detach().requires_grad_(True)
 
-            # FIX 3: forward 경로를 forward_with_features로 통일
-            # (아래 불일치 확인도 동일한 함수를 쓰므로 결과가 일관됨)
             logits1, feat1 = model1.forward_with_features(gen_img)
             logits2, feat2 = model2.forward_with_features(gen_img)
             logits3, feat3 = model3.forward_with_features(gen_img)
@@ -198,11 +180,8 @@ def main():
             elif args.transformation == "blackout":
                 grads = constraint_black(grads)
 
-            # FIX 1: 정규화된 공간에서의 유효 범위로 clamp
-            # (원본: clamp(0,1)은 정규화 전 픽셀 범위이므로 정규화된 텐서에 부적절)
             gen_img = clamp_to_valid_range(gen_img.detach() + grads * args.step)
 
-            # FIX 3: 불일치 확인도 forward_with_features로 통일
             with torch.no_grad():
                 logits1_new, feat1_new = model1.forward_with_features(gen_img)
                 logits2_new, feat2_new = model2.forward_with_features(gen_img)
@@ -219,10 +198,9 @@ def main():
                     bcolors.ENDC
                 )
 
-                # FIX 2: coverage update 추가 (원본 코드에서 누락됐던 부분)
-                update_coverage_from_features(feat1_new, model_layer_dict1, args.threshold)
-                update_coverage_from_features(feat2_new, model_layer_dict2, args.threshold)
-                update_coverage_from_features(feat3_new, model_layer_dict3, args.threshold)
+                update_coverage_from_features(feat1_new, "model1", model_layer_dict1, args.threshold)
+                update_coverage_from_features(feat2_new, "model2", model_layer_dict2, args.threshold)
+                update_coverage_from_features(feat3_new, "model3", model_layer_dict3, args.threshold)
 
                 c1, t1, r1 = neuron_covered(model_layer_dict1)
                 c2, t2, r2 = neuron_covered(model_layer_dict2)
@@ -250,6 +228,28 @@ def main():
           f"Finished. Found {found_count}/{args.seeds} inputs. "
           f"Avg NC: {avg_nc:.4f}" +
           bcolors.ENDC)
+
+    # JSON 결과 저장
+    result = {
+        "transformation": args.transformation,
+        "weight_diff":     args.weight_diff,
+        "weight_nc":       args.weight_nc,
+        "step":            args.step,
+        "seeds":           args.seeds,
+        "grad_iterations": args.grad_iterations,
+        "threshold":       args.threshold,
+        "target_model":    args.target_model,
+        "found":           found_count,
+        "nc_model1":       round(r1, 4),
+        "nc_model2":       round(r2, 4),
+        "nc_model3":       round(r3, 4),
+        "avg_nc":          round(avg_nc, 4),
+    }
+
+    json_path = os.path.join(args.output_dir, "result.json")
+    with open(json_path, "w") as f:
+        json.dump(result, f, indent=2)
+    print(bcolors.OKBLUE + f"Result saved to {json_path}" + bcolors.ENDC)
 
 
 if __name__ == "__main__":
