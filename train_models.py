@@ -174,4 +174,4 @@ if __name__ == "__main__":
     train_one_model(42, 0.005, 2, 1, True, "checkpoints/model2.pth")
 
     # pretrained partial fine-tune
-    train_one_model(42, 0.005, 3, 3, True, "checkpoints/model4.pth")
+    train_one_model(42, 0.005, 3, 3, True, "checkpoints/model3.pth")

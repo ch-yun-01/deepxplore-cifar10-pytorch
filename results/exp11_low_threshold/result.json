@@ -3,13 +3,13 @@
   "weight_diff": 1.0,
   "weight_nc": 0.1,
   "step": 0.05,
-  "seeds": 200,
+  "seeds": 100,
   "grad_iterations": 100,
   "threshold": 0.3,
   "target_model": 0,
-  "found": 23,
+  "found": 13,
   "nc_model1": 1.0,
-  "nc_model2": 0.9743,
-  "nc_model3": 0.9709,
-  "avg_nc": 0.9817
+  "nc_model2": 0.9044,
+  "nc_model3": 0.9516,
+  "avg_nc": 0.952
 }

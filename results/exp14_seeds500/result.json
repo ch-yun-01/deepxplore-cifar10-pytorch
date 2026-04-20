@@ -1,0 +1,15 @@
+{
+  "transformation": "light",
+  "weight_diff": 1.0,
+  "weight_nc": 0.1,
+  "step": 0.05,
+  "seeds": 300,
+  "grad_iterations": 100,
+  "threshold": 0.5,
+  "target_model": 0,
+  "found": 55,
+  "nc_model1": 0.996,
+  "nc_model2": 0.9632,
+  "nc_model3": 0.9766,
+  "avg_nc": 0.9786
+}
