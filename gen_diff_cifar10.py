@@ -30,6 +30,13 @@ CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR10_STD  = (0.2023, 0.1994, 0.2010)
 
 
+def deprocess_image(img: torch.Tensor) -> torch.Tensor:
+    # 정규화된 이미지를 [0, 1] 픽셀 범위로 복원
+    mean = torch.tensor(CIFAR10_MEAN, device=img.device).view(1, 3, 1, 1)
+    std  = torch.tensor(CIFAR10_STD,  device=img.device).view(1, 3, 1, 1)
+    return torch.clamp(img * std + mean, 0.0, 1.0)
+
+
 def clamp_to_valid_range(img: torch.Tensor) -> torch.Tensor:
     mean = torch.tensor(CIFAR10_MEAN, device=img.device).view(1, 3, 1, 1)
     std  = torch.tensor(CIFAR10_STD,  device=img.device).view(1, 3, 1, 1)
@@ -54,8 +61,8 @@ def main():
 
     parser.add_argument("--start_x",  type=int, default=0)
     parser.add_argument("--start_y",  type=int, default=0)
-    parser.add_argument("--occl_w",   type=int, default=8)
-    parser.add_argument("--occl_h",   type=int, default=8)
+    parser.add_argument("--occl_w",   type=int, default=10)
+    parser.add_argument("--occl_h",   type=int, default=10)
 
     parser.add_argument("--model1_path", default="./checkpoints/model1.pth")
     parser.add_argument("--model2_path", default="./checkpoints/model2.pth")
@@ -126,18 +133,35 @@ def main():
                 f"[seed {seed_idx}] already differs: {label1},{label2},{label3}" +
                 bcolors.ENDC
             )
+
             update_coverage_from_features(feat1, "model1", model_layer_dict1, args.threshold)
             update_coverage_from_features(feat2, "model2", model_layer_dict2, args.threshold)
             update_coverage_from_features(feat3, "model3", model_layer_dict3, args.threshold)
 
+            c1, t1, r1 = neuron_covered(model_layer_dict1)
+            c2, t2, r2 = neuron_covered(model_layer_dict2)
+            c3, t3, r3 = neuron_covered(model_layer_dict3)
+            avg_nc = (c1 + c2 + c3) / float(t1 + t2 + t3)
+            print(
+                bcolors.OKGREEN +
+                f"covered neurons percentage {t1} neurons {r1:.3f}, "
+                f"{t2} neurons {r2:.3f}, {t3} neurons {r3:.3f}" +
+                bcolors.ENDC
+            )
+            print(bcolors.OKGREEN + f"averaged covered neurons {avg_nc:.3f}" + bcolors.ENDC)
+
             save_image(
                 os.path.join(args.output_dir, f"already_{seed_idx}_{label1}_{label2}_{label3}.png"),
-                gen_img,
+                deprocess_image(gen_img),
             )
             found_count += 1
             continue
 
         orig_label = label1
+
+        n1 = neuron_to_cover(model_layer_dict1)
+        n2 = neuron_to_cover(model_layer_dict2)
+        n3 = neuron_to_cover(model_layer_dict3)
 
         for iters in range(args.grad_iterations):
 
@@ -146,10 +170,6 @@ def main():
             logits1, feat1 = model1.forward_with_features(gen_img)
             logits2, feat2 = model2.forward_with_features(gen_img)
             logits3, feat3 = model3.forward_with_features(gen_img)
-
-            n1 = neuron_to_cover(model_layer_dict1)
-            n2 = neuron_to_cover(model_layer_dict2)
-            n3 = neuron_to_cover(model_layer_dict3)
 
             objective = make_objective(
                 logits_list=[logits1, logits2, logits3],
@@ -164,7 +184,6 @@ def main():
             model1.zero_grad()
             model2.zero_grad()
             model3.zero_grad()
-
             objective.backward()
 
             grads = normalize_gradient(gen_img.grad.detach())
@@ -192,12 +211,6 @@ def main():
             pred3 = get_argmax_label(logits3_new)
 
             if disagreement_found([pred1, pred2, pred3]):
-                print(
-                    bcolors.OKGREEN +
-                    f"[seed {seed_idx}, iter {iters}] diff: {pred1},{pred2},{pred3}" +
-                    bcolors.ENDC
-                )
-
                 update_coverage_from_features(feat1_new, "model1", model_layer_dict1, args.threshold)
                 update_coverage_from_features(feat2_new, "model2", model_layer_dict2, args.threshold)
                 update_coverage_from_features(feat3_new, "model3", model_layer_dict3, args.threshold)
@@ -208,13 +221,20 @@ def main():
                 avg_nc = (c1 + c2 + c3) / float(t1 + t2 + t3)
                 print(
                     bcolors.OKGREEN +
-                    f"  NC — M1:{r1:.3f} M2:{r2:.3f} M3:{r3:.3f} avg:{avg_nc:.3f}" +
+                    f"[seed {seed_idx}, iter {iters}] diff: {pred1},{pred2},{pred3}" +
                     bcolors.ENDC
                 )
+                print(
+                    bcolors.OKGREEN +
+                    f"covered neurons percentage {t1} neurons {r1:.3f}, "
+                    f"{t2} neurons {r2:.3f}, {t3} neurons {r3:.3f}" +
+                    bcolors.ENDC
+                )
+                print(bcolors.OKGREEN + f"averaged covered neurons {avg_nc:.3f}" + bcolors.ENDC)
 
                 base = f"{args.transformation}_{seed_idx}_{iters}_{pred1}_{pred2}_{pred3}"
-                save_image(os.path.join(args.output_dir, base + ".png"),      gen_img)
-                save_image(os.path.join(args.output_dir, base + "_orig.png"), orig_img)
+                save_image(os.path.join(args.output_dir, base + ".png"),      deprocess_image(gen_img))
+                save_image(os.path.join(args.output_dir, base + "_orig.png"), deprocess_image(orig_img))
 
                 found_count += 1
                 break

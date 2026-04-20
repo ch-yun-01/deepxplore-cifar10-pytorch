@@ -12,7 +12,7 @@ def run_command(cmd):
 
 def main():
     os.makedirs("checkpoints", exist_ok=True)
-    os.makedirs("generated_inputs", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
 
     needed = [
         "checkpoints/model1.pth",

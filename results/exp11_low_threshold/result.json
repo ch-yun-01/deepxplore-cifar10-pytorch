@@ -7,9 +7,9 @@
   "grad_iterations": 100,
   "threshold": 0.3,
   "target_model": 0,
-  "found": 28,
-  "nc_model1": 0.9998,
-  "nc_model2": 0.9839,
-  "nc_model3": 0.9822,
-  "avg_nc": 0.9886
+  "found": 23,
+  "nc_model1": 1.0,
+  "nc_model2": 0.9743,
+  "nc_model3": 0.9709,
+  "avg_nc": 0.9817
 }
