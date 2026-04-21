@@ -78,51 +78,24 @@ python test.py
 
 ---
 
-## 실험 모델
+## 실험 구성
 
-| 모델 | 초기화 방식 | 학습 방식 | 학습 레이어 | Data Augmentation | Test Accuracy |
-|---|---|---|---|---|---|
-| Model 1 | Scratch | Full Training | All Layers | RandomCrop + HorizontalFlip + ColorJitter | 87.35% |
-| Model 2 | ImageNet Pretrained | Full Fine-tuning | All Layers | HorizontalFlip + ColorJitter + Rotation | 96.99% |
-| Model 3 | ImageNet Pretrained | Partial Fine-tuning | layer3 + layer4 + fc | RandomCrop + HorizontalFlip | 90.34% |
-
----
-
-## 실험 파라미터 설명
-
-| 항목 | 설명 |
-|---|---|
-| Transformation | 입력 이미지에 적용한 perturbation 방식 (light, occl, blackout) |
-| w_diff | 모델 간 prediction disagreement를 최대화하는 loss의 가중치 |
-| w_nc | neuron coverage를 증가시키는 coverage loss의 가중치 |
-| step | gradient ascent 시 한 번에 입력을 업데이트하는 크기 |
-| seeds | 초기 seed input 개수 |
-| grad_iter | 각 seed에 대해 수행한 gradient optimization 반복 횟수 |
-| threshold | neuron이 activated로 판단되는 activation 기준값 |
-| target | differential testing의 기준이 되는 target model 번호 |
-| found | disagreement를 유발한 input의 개수 |
-| avg_NC | 세 모델의 평균 neuron coverage 값 |
-
----
-
-## 실험 결과
-
-| Exp | Trans. | w_diff | w_nc | Step | Seeds | Grad Iter | Threshold | Target | Found | NC M1 | NC M2 | NC M3 | Avg NC |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| exp1 | light | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.5 | 0 | 19 | 0.9753 | 0.8493 | 0.8978 | 0.9075 |
-| exp2 | occl | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.5 | 0 | 27 | 0.9736 | 0.9046 | 0.9330 | 0.9371 |
-| exp3 | blackout | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.5 | 0 | 100 | 0.9978 | 0.9777 | 0.9894 | 0.9883 |
-| exp4 | light | 2.0 | 0.1 | 0.05 | 100 | 100 | 0.5 | 0 | 17 | 0.9719 | 0.8422 | 0.8671 | 0.8938 |
-| exp5 | light | 1.0 | 0.5 | 0.05 | 100 | 100 | 0.5 | 0 | 14 | 0.9730 | 0.8039 | 0.8362 | 0.8710 |
-| exp6 | light | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.5 | 1 | 17 | 0.9760 | 0.8661 | 0.8931 | 0.9117 |
-| exp7 | light | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.5 | 2 | 17 | 0.9644 | 0.8317 | 0.8622 | 0.8861 |
-| exp8 | light | 1.0 | 0.1 | 0.01 | 100 | 100 | 0.5 | 0 | 18 | 0.9736 | 0.8683 | 0.9244 | 0.9221 |
-| exp9 | light | 1.0 | 0.1 | 0.10 | 100 | 100 | 0.5 | 0 | 13 | 0.9402 | 0.7811 | 0.8525 | 0.8579 |
-| exp10 | occl | 2.0 | 0.5 | 0.05 | 100 | 100 | 0.5 | 0 | 43 | 0.9931 | 0.9545 | 0.9699 | 0.9725 |
-| exp11 | light | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.3 | 0 | 13 | 1.0000 | 0.9044 | 0.9516 | 0.9520 |
-| exp12 | light | 1.0 | 0.1 | 0.05 | 100 | 100 | 0.7 | 0 | 15 | 0.8399 | 0.6663 | 0.7387 | 0.7483 |
-| exp13 | light | 1.0 | 0.1 | 0.05 | 200 | 100 | 0.5 | 0 | 33 | 0.9973 | 0.9338 | 0.9385 | 0.9565 |
-| exp14 | light | 1.0 | 0.1 | 0.05 | 300 | 100 | 0.5 | 0 | 55 | 0.9960 | 0.9632 | 0.9766 | 0.9786 |
+| 실험 | 변환 | 주요 변경 파라미터 |
+|---|---|---|
+| exp1 | light | baseline (seeds=100) |
+| exp2 | occl | - |
+| exp3 | blackout | - |
+| exp4 | light | weight_diff=2.0 |
+| exp5 | light | weight_nc=0.5 |
+| exp6 | light | target_model=1 |
+| exp7 | light | target_model=2 |
+| exp8 | light | step=0.01 |
+| exp9 | light | step=0.10 |
+| exp10 | occl | weight_diff=2.0, weight_nc=0.5 |
+| exp11 | light | threshold=0.3 |
+| exp12 | light | threshold=0.7 |
+| exp13 | light | seeds=200 |
+| exp14 | light | seeds=300 |
 
 ---
 
