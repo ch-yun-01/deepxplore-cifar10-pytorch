@@ -29,20 +29,20 @@ def main():
     print("[INFO] Running DeepXplore-style generation...")
     experiments = [
         # (transformation, weight_diff, weight_nc, step, seeds, grad_iter, threshold, target_model, output_dir)
-        # ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp1_light_baseline"),
-        # ("occl",     "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp2_occl"),
-        # ("blackout", "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp3_blackout"),
-        # ("light",    "2.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp4_high_weight_diff"),
-        # ("light",    "1.0", "0.5", "0.05", "100", "100", "0.5", "0", "./results/exp5_high_weight_nc"),
-        # ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "1", "./results/exp6_target_model1"),
-        # ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "2", "./results/exp7_target_model2"),
-        # ("light",    "1.0", "0.1", "0.01", "100", "100", "0.5", "0", "./results/exp8_small_step"),
-        # ("light",    "1.0", "0.1", "0.10", "100", "100", "0.5", "0", "./results/exp9_large_step"),
-        # ("occl",     "2.0", "0.5", "0.05", "100", "100", "0.5", "0", "./results/exp10_occl_high_both"),
-        # ("light",    "1.0", "0.1", "0.05", "100", "100", "0.3", "0", "./results/exp11_low_threshold"),
-        # ("light",    "1.0", "0.1", "0.05", "100", "100", "0.7", "0", "./results/exp12_high_threshold"),
+        ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp1_light_baseline"),
+        ("occl",     "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp2_occl"),
+        ("blackout", "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp3_blackout"),
+        ("light",    "2.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp4_high_weight_diff"),
+        ("light",    "1.0", "0.5", "0.05", "100", "100", "0.5", "0", "./results/exp5_high_weight_nc"),
+        ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "1", "./results/exp6_target_model1"),
+        ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "2", "./results/exp7_target_model2"),
+        ("light",    "1.0", "0.1", "0.01", "100", "100", "0.5", "0", "./results/exp8_small_step"),
+        ("light",    "1.0", "0.1", "0.10", "100", "100", "0.5", "0", "./results/exp9_large_step"),
+        ("occl",     "2.0", "0.5", "0.05", "100", "100", "0.5", "0", "./results/exp10_occl_high_both"),
+        ("light",    "1.0", "0.1", "0.05", "100", "100", "0.3", "0", "./results/exp11_low_threshold"),
+        ("light",    "1.0", "0.1", "0.05", "100", "100", "0.7", "0", "./results/exp12_high_threshold"),
         ("light",    "1.0", "0.1", "0.05", "200", "100", "0.5", "0", "./results/exp13_seeds200"),
-        ("light",    "1.0", "0.1", "0.05", "300", "100", "0.5", "0", "./results/exp14_seeds500"),
+        ("light",    "1.0", "0.1", "0.05", "300", "100", "0.5", "0", "./results/exp14_seeds300"),
     ]
 
     for (transform, w_diff, w_nc, step, seeds, grad_iter, threshold, target, out_dir) in experiments:
