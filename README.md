@@ -96,3 +96,12 @@ python test.py
 | exp12 | light | threshold=0.7 |
 | exp13 | light | seeds=200 |
 | exp14 | light | seeds=300 |
+
+---
+
+## 참조
+
+본 프로젝트는 아래 원본 구현을 참조하여 PyTorch 및 CIFAR-10 환경에 맞게 재구현하였습니다.
+
+- **Paper**: Pei et al., *DeepXplore: Automated Whitebox Testing of Deep Learning Systems*, SOSP 2017
+- **Original Code**: [https://github.com/peikexin9/deepxplore](https://github.com/peikexin9/deepxplore)
