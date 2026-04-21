@@ -74,7 +74,49 @@ python test.py
     └── exp14_seeds300/
 ```
 
-각 실험 폴더에는 disagreement를 유발한 이미지(`.png`)와 결과 요약(`result.json`)이 저장됩니다.
+---
+
+## 실험 결과 파일 구조
+
+각 실험 폴더에는 다음 파일들이 저장됩니다.
+
+| 파일명 | 설명 |
+|---|---|
+| `{transformation}_{seed}_{iter}_{p1}_{p2}_{p3}.png` | gradient로 수정된 이미지 (perturbed) |
+| `{transformation}_{seed}_{iter}_{p1}_{p2}_{p3}_orig.png` | 수정 전 원본 이미지 |
+| `already_{seed}_{p1}_{p2}_{p3}.png` | perturbation 없이 이미 disagreement가 발생한 이미지 |
+| `result.json` | 실험 파라미터 및 최종 결과 요약 |
+
+### already_ 이미지란?
+
+`already_` 접두사가 붙은 이미지는 gradient 탐색 없이 **원본 seed 이미지만으로도** 세 모델이 서로 다른 예측을 내놓은 경우입니다. perturbation이 적용되지 않은 자연 입력에서 disagreement가 발생한 케이스이며, `result.json`의 `found` 수치에는 이 경우도 포함됩니다.
+
+---
+
+## 실험 모델
+
+| 모델 | 초기화 방식 | 학습 방식 | 학습 레이어 | Data Augmentation | Test Accuracy |
+|---|---|---|---|---|---|
+| Model 1 | Scratch | Full Training | All Layers | RandomCrop + HorizontalFlip + ColorJitter | 87.35% |
+| Model 2 | ImageNet Pretrained | Full Fine-tuning | All Layers | HorizontalFlip + ColorJitter + Rotation | 96.99% |
+| Model 3 | ImageNet Pretrained | Partial Fine-tuning | layer3 + layer4 + fc | RandomCrop + HorizontalFlip | 90.34% |
+
+---
+
+## 실험 파라미터 설명
+
+| 항목 | 설명 |
+|---|---|
+| Transformation | 입력 이미지에 적용한 perturbation 방식 (light, occl, blackout) |
+| w_diff | 모델 간 prediction disagreement를 최대화하는 loss의 가중치 |
+| w_nc | neuron coverage를 증가시키는 coverage loss의 가중치 |
+| step | gradient ascent 시 한 번에 입력을 업데이트하는 크기 |
+| seeds | 초기 seed input 개수 |
+| grad_iter | 각 seed에 대해 수행한 gradient optimization 반복 횟수 |
+| threshold | neuron이 activated로 판단되는 activation 기준값 |
+| target | differential testing의 기준이 되는 target model 번호 |
+| found | disagreement를 유발한 input의 개수 (already_ 케이스 포함) |
+| avg_NC | 세 모델의 평균 neuron coverage 값 |
 
 ---
 

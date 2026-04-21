@@ -8,8 +8,8 @@
   "threshold": 0.5,
   "target_model": 0,
   "found": 100,
-  "nc_model1": 0.9978,
-  "nc_model2": 0.9777,
-  "nc_model3": 0.9894,
-  "avg_nc": 0.9883
+  "nc_model1": 0.9975,
+  "nc_model2": 0.9751,
+  "nc_model3": 0.9889,
+  "avg_nc": 0.9872
 }

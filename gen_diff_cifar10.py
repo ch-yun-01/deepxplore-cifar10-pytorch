@@ -30,8 +30,8 @@ CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR10_STD  = (0.2023, 0.1994, 0.2010)
 
 
-def deprocess_image(img: torch.Tensor) -> torch.Tensor:
-    # 정규화된 이미지를 [0, 1] 픽셀 범위로 복원
+def denormalize(img: torch.Tensor) -> torch.Tensor:
+    """정규화된 텐서를 [0, 1] 픽셀 범위로 복원한다. save_image 호출 전 반드시 사용."""
     mean = torch.tensor(CIFAR10_MEAN, device=img.device).view(1, 3, 1, 1)
     std  = torch.tensor(CIFAR10_STD,  device=img.device).view(1, 3, 1, 1)
     return torch.clamp(img * std + mean, 0.0, 1.0)
@@ -152,7 +152,7 @@ def main():
 
             save_image(
                 os.path.join(args.output_dir, f"already_{seed_idx}_{label1}_{label2}_{label3}.png"),
-                deprocess_image(gen_img),
+                denormalize(gen_img),
             )
             found_count += 1
             continue
@@ -232,9 +232,15 @@ def main():
                 )
                 print(bcolors.OKGREEN + f"averaged covered neurons {avg_nc:.3f}" + bcolors.ENDC)
 
+                # 디버그: denormalize 후 차이 확인
+                gen_denorm  = denormalize(gen_img)
+                orig_denorm = denormalize(orig_img)
+                diff_denorm = (gen_denorm - orig_denorm).abs().max().item()
+                print(f"[debug] max pixel diff (denormalized [0,1]): {diff_denorm:.6f}")
+
                 base = f"{args.transformation}_{seed_idx}_{iters}_{pred1}_{pred2}_{pred3}"
-                save_image(os.path.join(args.output_dir, base + ".png"),      deprocess_image(gen_img))
-                save_image(os.path.join(args.output_dir, base + "_orig.png"), deprocess_image(orig_img))
+                save_image(os.path.join(args.output_dir, base + ".png"),      gen_denorm)
+                save_image(os.path.join(args.output_dir, base + "_orig.png"), orig_denorm)
 
                 found_count += 1
                 break
