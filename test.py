@@ -29,7 +29,7 @@ def main():
     print("[INFO] Running DeepXplore-style generation...")
     experiments = [
         # (transformation, weight_diff, weight_nc, step, seeds, grad_iter, threshold, target_model, output_dir)
-        # ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp1_light_baseline"),
+        ("light",    "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp1_light_baseline"),
         ("occl",     "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp2_occl"),
         ("blackout", "1.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp3_blackout"),
         ("light",    "2.0", "0.1", "0.05", "100", "100", "0.5", "0", "./results/exp4_high_weight_diff"),
