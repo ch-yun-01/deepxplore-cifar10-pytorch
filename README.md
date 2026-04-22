@@ -9,7 +9,7 @@
 본 프로젝트는 [DeepXplore](https://arxiv.org/abs/1705.06640)를 CIFAR-10 데이터셋과 PyTorch 환경에 맞게 구현한 것입니다.  
 서로 다른 방식으로 학습된 세 개의 ResNet-50 모델에 대해 **difference-inducing input**을 생성하고, **neuron coverage**를 극대화하면서 모델 간 예측 불일치를 유발하는 입력을 탐색합니다.
 
-`python test.py` 한 번으로 exp1~exp14 전체 실험이 자동으로 순차 실행됩니다.
+`python test.py` 으로 exp1~exp14 전체 실험이 자동으로 순차 실행됩니다.
 
 ---
 
