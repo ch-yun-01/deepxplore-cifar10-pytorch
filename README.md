@@ -87,9 +87,6 @@ python test.py
 | `already_{seed}_{p1}_{p2}_{p3}.png` | perturbation 없이 이미 disagreement가 발생한 이미지 |
 | `result.json` | 실험 파라미터 및 최종 결과 요약 |
 
-### already_ 이미지란?
-
-`already_` 접두사가 붙은 이미지는 gradient 탐색 없이 **원본 seed 이미지만으로도** 세 모델이 서로 다른 예측을 내놓은 경우입니다. perturbation이 적용되지 않은 자연 입력에서 disagreement가 발생한 케이스이며, `result.json`의 `found` 수치에는 이 경우도 포함됩니다.
 
 ---
 
